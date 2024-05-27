@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "apps/domain_scanning_service/src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/domain_scanning_service/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/domain_scanning_service",
+  "projects": {
+    "domain_scanning_service": {
+      "type": "application",
+      "root": "apps/domain_scanning_service",
+      "entryFile": "main",
+      "sourceRoot": "apps/domain_scanning_service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/domain_scanning_service/tsconfig.app.json"
+      }
+    },
+    "products_service": {
+      "type": "application",
+      "root": "apps/products_service",
+      "entryFile": "main",
+      "sourceRoot": "apps/products_service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/products_service/tsconfig.app.json"
+      }
+    },
+    "database_service": {
+      "type": "application",
+      "root": "apps/database_service",
+      "entryFile": "main",
+      "sourceRoot": "apps/database_service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/database_service/tsconfig.app.json"
+      }
+    },
+    "scheduling_service": {
+      "type": "application",
+      "root": "apps/scheduling_service",
+      "entryFile": "main",
+      "sourceRoot": "apps/scheduling_service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/scheduling_service/tsconfig.app.json"
+      }
+    }
+  }
+}
