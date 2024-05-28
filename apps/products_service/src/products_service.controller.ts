@@ -1,7 +1,6 @@
 import {
   Controller,
   Get,
-  Param,
   ParseIntPipe,
   Post,
   Query,
@@ -9,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { ProductsServiceService } from './products_service.service';
 import { Domain } from '@prisma/client';
+import { DomainDto } from './domain.dto';
 
 @Controller('domain')
 export class ProductsServiceController {
@@ -16,47 +16,56 @@ export class ProductsServiceController {
     private readonly productsServiceService: ProductsServiceService,
   ) {}
 
-  @Get(':domain')
+  @Get()
   async getDomain(
     @Req() request: Request,
-    @Param('domain') domain: string,
-    @Query('interval', new ParseIntPipe({ optional: true })) interval: number,
-  ): Promise<Domain | string> {
-    this.productsServiceService.logAccess(
-      domain,
-      new Date(),
-      request,
-      interval,
-    );
-    const scanResults = await this.productsServiceService.handleDomainRequest(
-      domain,
-      interval,
-    );
-    return (
-      scanResults ||
-      'Domain added to queue for scanning, please check back later.'
-    );
+    @Query('interval', new ParseIntPipe({ optional: true }))
+    interval: number,
+    @Query() { domain }: DomainDto,
+  ): Promise<Omit<Domain, 'id'> | string> {
+    console.log('GET domain request:', domain, interval);
+
+    try {
+      const scanResults = await this.productsServiceService.handleDomainRequest(
+        domain,
+        request,
+        interval,
+      );
+
+      console.log('Scan results:', scanResults);
+      return (
+        scanResults ||
+        'Domain added to queue for scanning, please check back later.'
+      );
+    } catch (error) {
+      console.error('Error getting domain:', error);
+      return 'Error getting domain.';
+    }
   }
 
-  @Post(':domain')
+  @Post()
   async addDomain(
     @Req() request: Request,
-    @Param('domain') domain: string,
-    @Query('interval', new ParseIntPipe({ optional: true })) interval: number,
+    @Query('interval', new ParseIntPipe({ optional: true }))
+    interval: number,
+    @Query() { domain }: DomainDto,
   ): Promise<string> {
-    this.productsServiceService.logAccess(
-      domain,
-      new Date(),
-      request,
-      interval,
-    );
-    const addResults = await this.productsServiceService.handleDomainRequest(
-      domain,
-      interval,
-    );
-    if (addResults)
-      return (
-        'Domain previously added with interval of ' + addResults.interval + '.'
-      );
+    console.log('POST domain request:', domain, interval);
+
+    try {
+      const previouslyAdded =
+        !!(await this.productsServiceService.handleDomainRequest(
+          domain,
+          request,
+          interval,
+        ));
+      console.log('Previously added:', previouslyAdded);
+      return previouslyAdded
+        ? 'Domain previously added.'
+        : 'Domain added to queue for scanning.';
+    } catch (error) {
+      console.error('Error adding domain:', error);
+      return 'Error adding domain.';
+    }
   }
 }
