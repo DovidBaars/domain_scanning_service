@@ -65,7 +65,11 @@ export class ProductsServiceService {
       return domainData;
     }
     console.log('Domain not found in DB, adding...');
-    await this.addDomainToDb(domain, interval);
-    await this.addScanReqToQueue(domain, interval);
+
+    if (
+      !(await this.addDomainToDb(domain, interval)) ||
+      !(await this.addScanReqToQueue(domain, interval))
+    )
+      throw new Error('Error adding domain.');
   }
 }
