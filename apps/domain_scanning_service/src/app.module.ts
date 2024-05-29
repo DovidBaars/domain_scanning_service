@@ -3,6 +3,8 @@ import { ProductsServiceController } from 'apps/products_service/src/products_se
 import { ProductsServiceService } from 'apps/products_service/src/products_service.service';
 import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { PrismaService } from './prisma.service';
+import { SchedulingServiceService } from 'apps/scheduling_service/src/scheduling_service.service';
+import { ScheduleModule } from '@nestjs/schedule';
 
 const messagingClient = RabbitMQModule.forRoot(RabbitMQModule, {
   exchanges: [
@@ -16,9 +18,9 @@ const messagingClient = RabbitMQModule.forRoot(RabbitMQModule, {
 });
 
 @Module({
-  imports: [messagingClient],
+  imports: [messagingClient, ScheduleModule.forRoot()],
   controllers: [ProductsServiceController],
-  providers: [ProductsServiceService, PrismaService],
+  providers: [ProductsServiceService, SchedulingServiceService, PrismaService],
   exports: [RabbitMQModule],
 })
 export class AppModule {}

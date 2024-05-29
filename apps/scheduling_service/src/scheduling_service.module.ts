@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
-import { SchedulingServiceController } from './scheduling_service.controller';
 import { SchedulingServiceService } from './scheduling_service.service';
+import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 
 @Module({
-  imports: [],
-  controllers: [SchedulingServiceController],
+  imports: [RabbitMQModule],
   providers: [SchedulingServiceService],
 })
 export class SchedulingServiceModule {}

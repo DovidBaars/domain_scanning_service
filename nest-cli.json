@@ -28,15 +28,6 @@
         "tsConfigPath": "apps/products_service/tsconfig.app.json"
       }
     },
-    "database_service": {
-      "type": "application",
-      "root": "apps/database_service",
-      "entryFile": "main",
-      "sourceRoot": "apps/database_service/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/database_service/tsconfig.app.json"
-      }
-    },
     "scheduling_service": {
       "type": "application",
       "root": "apps/scheduling_service",

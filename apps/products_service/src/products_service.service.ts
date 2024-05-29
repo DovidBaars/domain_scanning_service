@@ -32,6 +32,7 @@ export class ProductsServiceService {
     domain: Domain['url'],
     interval: Domain['interval'],
   ): Promise<boolean> {
+    console.log('Publishing message to queue');
     return await this.amqpConnection.publish('dss-exchange', 'scan.schedule', {
       domain,
       interval,

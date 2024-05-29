@@ -20,6 +20,13 @@ interval  Int?
 results String?
 }
 
+model CronTask {
+id    Int     @id @default(autoincrement())
+  url String @unique
+  cronString String
+  lastRun DateTime?
+}
+
 model AccessLogs {
 id    Int     @id @default(autoincrement())
   domain String

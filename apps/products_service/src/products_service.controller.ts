@@ -19,9 +19,7 @@ export class ProductsServiceController {
   @Get()
   async getDomain(
     @Req() request: Request,
-    @Query('interval', new ParseIntPipe({ optional: true }))
-    interval: number,
-    @Query() { domain }: DomainDto,
+    @Query() { domain, interval }: DomainDto,
   ): Promise<Omit<Domain, 'id'> | string> {
     console.log('GET domain request:', domain, interval);
 
@@ -46,9 +44,7 @@ export class ProductsServiceController {
   @Post()
   async addDomain(
     @Req() request: Request,
-    @Query('interval', new ParseIntPipe({ optional: true }))
-    interval: number,
-    @Query() { domain }: DomainDto,
+    @Query() { domain, interval }: DomainDto,
   ): Promise<string> {
     console.log('POST domain request:', domain, interval);
 
