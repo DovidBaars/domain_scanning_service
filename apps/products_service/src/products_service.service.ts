@@ -14,6 +14,13 @@ export class ProductsServiceService {
   private async findDomainInDb(domain: string): Promise<Domain> {
     return await this.prisma.domain.findUnique({
       where: { url: domain },
+      include: {
+        results: {
+          include: {
+            scanApi: true,
+          },
+        },
+      },
     });
   }
 
@@ -72,8 +79,10 @@ export class ProductsServiceService {
     const domainData: Domain = await this.findDomainInDb(domain);
     console.log('Domain data:', domainData);
     if (domainData) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id, ...rest } = domainData;
       console.log('Domain found in DB');
-      return { url: domainData.url, interval: domainData.interval };
+      return rest;
     }
     console.log('Domain not found in DB, adding...');
 
