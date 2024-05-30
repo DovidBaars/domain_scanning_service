@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -17,7 +11,18 @@ model Domain {
 id    Int     @id @default(autoincrement())
 url String  @unique
 interval  Int?
-results String?
+results Results[]
+cronTask CronTask[]
+}
+
+model Results {
+id    Int     @id @default(autoincrement())
+domainId  Int
+scanApiId Int
+results String
+@@unique([domainId, scanApiId])
+domain Domain @relation(fields: [domainId], references: [id]) 
+scanApi ScanApi @relation(fields: [scanApiId], references: [scanApiId])
 }
 
 model CronTask {
@@ -25,11 +30,19 @@ id    Int     @id @default(autoincrement())
   url String @unique
   cronString String
   lastRun DateTime?
+  domain Domain @relation(fields: [url], references: [url])
+}
+
+model ScanApi {
+scanApiId    Int     @id @default(autoincrement())
+  api String @unique
+  lastRun DateTime?
+  results Results[]
 }
 
 model AccessLogs {
 id    Int     @id @default(autoincrement())
-  domain String
+  url String
   timestamp DateTime
   userAgent String
   method String

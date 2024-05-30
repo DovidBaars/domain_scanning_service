@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  ParseIntPipe,
-  Post,
-  Query,
-  Req,
-} from '@nestjs/common';
+import { Controller, Get, Post, Query, Req } from '@nestjs/common';
 import { ProductsServiceService } from './products_service.service';
 import { Domain } from '@prisma/client';
 import { DomainDto } from './domain.dto';

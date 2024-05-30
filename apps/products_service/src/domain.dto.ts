@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsInt, IsOptional, IsUrl, Min } from 'class-validator';
+import { IsInt, IsOptional, IsUrl } from 'class-validator';
 
 export class DomainDto {
   @IsUrl()
@@ -7,7 +7,6 @@ export class DomainDto {
 
   @Transform(({ value }) => parseInt(value), { toClassOnly: true })
   @IsInt()
-  @Min(1)
   @IsOptional()
   interval: number;
 }

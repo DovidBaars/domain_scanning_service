@@ -1,26 +1,73 @@
-// import { Injectable } from '@nestjs/common';
-// import { CreateScanningDto } from './dto/create-scanning.dto';
-// import { UpdateScanningDto } from './dto/update-scanning.dto';
+import { Injectable } from '@nestjs/common';
+import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
+import { PrismaService } from '../prisma.service';
+import { validateMessage } from 'apps/scheduling_service/src/message_validator';
+import { Scanner } from './scanners/scanner.interface';
+import { VirusTotalService } from './scanners/virus_total.service';
+import { ScheduleRequestDto } from 'apps/scheduling_service/src/dto/scheduleRequest.dto';
 
-// @Injectable()
-// export class ScanningService {
-//   create(createScanningDto: CreateScanningDto) {
-//     return 'This action adds a new scanning';
-//   }
+@Injectable()
+export class ScanningService {
+  private readonly scannerServices: Scanner<any>[] = [];
 
-//   findAll() {
-//     return `This action returns all scanning`;
-//   }
+  constructor(
+    private readonly prisma: PrismaService,
+    private virusTotalService: VirusTotalService,
+  ) {}
 
-//   findOne(id: number) {
-//     return `This action returns a #${id} scanning`;
-//   }
+  async onModuleInit() {
+    console.log('Scanning service initialized');
+    this.initScanners();
+  }
 
-//   update(id: number, updateScanningDto: UpdateScanningDto) {
-//     return `This action updates a #${id} scanning`;
-//   }
+  private async initScanners() {
+    this.scannerServices.push(this.virusTotalService);
+    console.log('Initializing scanners', this.scannerServices.length);
+  }
 
-//   remove(id: number) {
-//     return `This action removes a #${id} scanning`;
-//   }
-// }
+  private async scanDomain(
+    domain: string,
+    scannerService: Scanner<any>,
+  ): Promise<{ result: object; scanApiId: number }> {
+    const result = await scannerService.scan(domain);
+    const { scanApiId } = await scannerService.upsertToScannerDb();
+    return { result, scanApiId };
+  }
+
+  @RabbitSubscribe({
+    exchange: 'dss-exchange',
+    routingKey: 'scan.*',
+  })
+  async create(msg: any) {
+    console.log('scanning service received message', msg);
+    try {
+      const { domain, domainId } = await validateMessage(
+        msg,
+        ScheduleRequestDto,
+      );
+
+      for (const scannerService of this.scannerServices) {
+        const { result, scanApiId } = await this.scanDomain(
+          domain,
+          scannerService,
+        );
+        await this.prisma.results.upsert({
+          create: {
+            domainId,
+            scanApiId: scanApiId,
+            results: JSON.stringify(result),
+          },
+          where: {
+            domainId_scanApiId: {
+              domainId,
+              scanApiId: scanApiId,
+            },
+          },
+          update: { results: JSON.stringify(result) },
+        });
+      }
+    } catch (error) {
+      console.error('Error scanning domain.', error.code);
+    }
+  }
+}

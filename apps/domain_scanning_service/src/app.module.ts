@@ -5,6 +5,9 @@ import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { PrismaService } from './prisma.service';
 import { SchedulingServiceService } from 'apps/scheduling_service/src/scheduling_service.service';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ScanningService } from './scanning/scanning.service';
+import { HttpModule } from '@nestjs/axios';
+import { VirusTotalService } from './scanning/scanners/virus_total.service';
 
 const messagingClient = RabbitMQModule.forRoot(RabbitMQModule, {
   exchanges: [
@@ -18,9 +21,15 @@ const messagingClient = RabbitMQModule.forRoot(RabbitMQModule, {
 });
 
 @Module({
-  imports: [messagingClient, ScheduleModule.forRoot()],
+  imports: [messagingClient, ScheduleModule.forRoot(), HttpModule.register({})],
   controllers: [ProductsServiceController],
-  providers: [ProductsServiceService, SchedulingServiceService, PrismaService],
+  providers: [
+    ProductsServiceService,
+    SchedulingServiceService,
+    PrismaService,
+    ScanningService,
+    VirusTotalService,
+  ],
   exports: [RabbitMQModule],
 })
 export class AppModule {}

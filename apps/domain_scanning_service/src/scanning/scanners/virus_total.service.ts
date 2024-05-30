@@ -1,0 +1,44 @@
+import { firstValueFrom, map } from 'rxjs';
+import { VirusTotalDomain } from './dto/virus_total_domain.interface';
+import { HttpService } from '@nestjs/axios';
+import { Scanner } from './scanner.interface';
+import { Injectable } from '@nestjs/common';
+import { ScannerBase } from './scanner_base';
+import { PrismaService } from '../../prisma.service';
+
+@Injectable()
+export class VirusTotalService
+  extends ScannerBase
+  implements Scanner<VirusTotalDomain>
+{
+  constructor(
+    private httpService: HttpService,
+    prisma: PrismaService,
+  ) {
+    super(
+      '874bfa1a8cb9e2820a1c026817b56a38dcbb3f4604135a1e38685447fc529a5f',
+      'https://www.virustotal.com/api/v3/domains',
+      prisma,
+    );
+  }
+
+  public async scan(domain: string) {
+    try {
+      const url = new URL(domain);
+      const transformedDomain = url.hostname;
+      const results: VirusTotalDomain = await firstValueFrom(
+        this.httpService
+          .get(`${this.apiUrl}/${transformedDomain}`, {
+            headers: {
+              'x-apikey': this.scannerApiKey,
+            },
+          })
+          .pipe(map((response) => response.data)),
+      );
+      return results;
+    } catch (err) {
+      console.error('Error scanning domain:', err);
+      return { error: err.message };
+    }
+  }
+}

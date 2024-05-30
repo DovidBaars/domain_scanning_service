@@ -5,7 +5,7 @@ import { SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
 import { DomainDto } from 'apps/products_service/src/domain.dto';
 import { PrismaService } from 'apps/domain_scanning_service/src/prisma.service';
-import { last } from 'rxjs';
+import { ScheduleRequestDto } from './dto/scheduleRequest.dto';
 
 const DEFAULT_INTERVAL = 1;
 const MAX_INTERVAL = 3;
@@ -18,6 +18,32 @@ export class SchedulingServiceService {
     private amqpConnection: AmqpConnection,
     private readonly prisma: PrismaService,
   ) {}
+
+  async onModuleInit() {
+    await this.restartCronJobsFromDb();
+    this.printCronJobs();
+  }
+
+  private printCronJobs() {
+    const jobs = this.schedulerRegistry.getCronJobs();
+    console.log('Currently running cron jobs: ', jobs.size);
+    jobs.forEach((value, key) => {
+      console.log(`- ${key}`);
+    });
+  }
+
+  private async restartCronJobsFromDb() {
+    const cronTasks = await this.prisma.cronTask.findMany();
+    for (const task of cronTasks) {
+      if (this.schedulerRegistry.doesExist('cron', task.url)) {
+        continue;
+      }
+      this.addCronJobForDailyScanning(task.url, task.cronString, () => {
+        this.addMessageToQueue(task.url);
+        this.upsertCronJobToDB(task.url);
+      });
+    }
+  }
 
   private validateTimesPerDay(timesPerDay: number) {
     return Math.max(MIN_INTERVAL, Math.min(timesPerDay, MAX_INTERVAL));
@@ -38,34 +64,26 @@ export class SchedulingServiceService {
   private addCronJobForDailyScanning(
     name: string,
     cronTime: string,
-    callback: () => void,
+    cronJobCallback: () => void,
+    updateDbCallback?: (name: string, cronTime: string) => void,
   ) {
-    const cronJob = new CronJob(
-      cronTime,
-      callback,
-      null,
-      null,
-      'UTC',
-      null,
-      true, // Start the job immediately only for dev
-    );
+    const cronJob = new CronJob(cronTime, cronJobCallback, null, null, 'UTC');
     try {
       this.schedulerRegistry.addCronJob(name, cronJob);
       console.warn(`Job ${name} added with cron time: ${cronTime}`);
-      this.addCronJobToDB(name, cronTime);
+      updateDbCallback(name, cronTime);
     } catch (e) {
       console.error(`Job ${name} already exists`);
     }
   }
 
   private async addMessageToQueue(domain: DomainDto['domain']) {
-    console.log('Publishing message to queue', domain);
     await this.amqpConnection.publish('dss-exchange', 'scan', {
       domain,
     });
   }
 
-  private async addCronJobToDB(domain: string, cronString: string) {
+  private async upsertCronJobToDB(domain: string, cronString: string = '') {
     await this.prisma.cronTask.upsert({
       create: {
         url: domain,
@@ -82,18 +100,24 @@ export class SchedulingServiceService {
     exchange: 'dss-exchange',
     routingKey: '*.schedule',
   })
-  async handleScheduleRequest(msg: any) {
-    const { domain, interval = DEFAULT_INTERVAL } = await validateMessage(msg);
-    console.log('Received message 1:', domain, interval);
-    this.addCronJobForDailyScanning(
-      domain,
-      this.generateDailyCronTime(interval),
-      () => {
-        this.addMessageToQueue(domain);
-        this.addCronJobToDB(domain, '');
-      },
-    );
-
-    console.log('Received message 2:', domain, interval);
+  async create(msg: any) {
+    try {
+      const { domain, interval = DEFAULT_INTERVAL } = await validateMessage(
+        msg,
+        ScheduleRequestDto,
+      );
+      this.addCronJobForDailyScanning(
+        domain,
+        this.generateDailyCronTime(interval),
+        () => {
+          this.addMessageToQueue(domain);
+          this.upsertCronJobToDB(domain);
+        },
+        (domainForUpsert, cronStringForUpsert) =>
+          this.upsertCronJobToDB(domainForUpsert, cronStringForUpsert),
+      );
+    } catch (error) {
+      console.error('Error scheduling domain:', error);
+    }
   }
 }

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import { PrismaService } from 'apps/domain_scanning_service/src/prisma.service';
 import { Domain } from '@prisma/client';
+import { ScheduleRequestDto } from 'apps/scheduling_service/src/dto/scheduleRequest.dto';
 
 @Injectable()
 export class ProductsServiceService {
@@ -16,39 +17,48 @@ export class ProductsServiceService {
     });
   }
 
-  private async addDomainToDb(
-    domain: Domain['url'],
-    interval: Domain['interval'],
-  ): Promise<boolean> {
-    return !!(await this.prisma.domain.create({
+  private async addDomainToDb(url: string, interval: number): Promise<Domain> {
+    return await this.prisma.domain.create({
       data: {
-        url: domain,
+        url,
         interval,
       },
-    }));
+    });
   }
 
-  private async addScanReqToQueue(
-    domain: Domain['url'],
-    interval: Domain['interval'],
-  ): Promise<boolean> {
+  private async addScanReqToQueue(domain: Domain): Promise<boolean> {
     console.log('Publishing message to queue');
-    return await this.amqpConnection.publish('dss-exchange', 'scan.schedule', {
-      domain,
-      interval,
-    });
+    const scanScheduleMsg: ScheduleRequestDto = {
+      domain: domain.url,
+      domainId: domain.id,
+      interval: domain.interval,
+    };
+    return await this.amqpConnection.publish(
+      'dss-exchange',
+      'scan.schedule',
+      scanScheduleMsg,
+    );
   }
 
-  private logAccess(domain: string, request: Request, interval?: number): void {
-    this.prisma.accessLogs.create({
-      data: {
-        domain,
-        timestamp: new Date(),
-        userAgent: request.headers['user-agent'],
-        method: request.method,
-        interval,
-      },
-    });
+  private async logAccess(
+    domain: string,
+    request: Request,
+    interval?: number,
+  ): Promise<void> {
+    console.log('Logging access');
+    try {
+      await this.prisma.accessLogs.create({
+        data: {
+          url: domain,
+          timestamp: new Date(),
+          userAgent: request.headers['user-agent'],
+          method: request.method,
+          interval,
+        },
+      });
+    } catch (e) {
+      console.error('Error logging access:', e);
+    }
   }
 
   public async handleDomainRequest(
@@ -59,18 +69,17 @@ export class ProductsServiceService {
     console.log('Handling domain request');
     this.logAccess(domain, request, interval);
 
-    let domainData: Domain = null;
-    domainData = await this.findDomainInDb(domain);
+    const domainData: Domain = await this.findDomainInDb(domain);
+    console.log('Domain data:', domainData);
     if (domainData) {
-      delete domainData.id;
-      return domainData;
+      console.log('Domain found in DB');
+      return { url: domainData.url, interval: domainData.interval };
     }
     console.log('Domain not found in DB, adding...');
 
-    if (
-      !(await this.addDomainToDb(domain, interval)) ||
-      !(await this.addScanReqToQueue(domain, interval))
-    )
+    const domainRecord = await this.addDomainToDb(domain, interval);
+
+    if (!domainRecord || !(await this.addScanReqToQueue(domainRecord)))
       throw new Error('Error adding domain.');
   }
 }
