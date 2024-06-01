@@ -17,13 +17,6 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
-    "paths": {
-      "@DSS/message_queue_service": [
-        "libs/message_queue_service/src"
-      ],
-      "@DSS/message_queue_service/*": [
-        "libs/message_queue_service/src/*"
-      ]
-    }
+    "paths": {}
   }
 }

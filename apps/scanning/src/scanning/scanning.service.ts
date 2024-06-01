@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { PrismaService } from '../prisma.service';
-import { validateMessage } from 'apps/scheduling_service/src/message_validator';
-import { Scanner } from './scanners/scanner.interface';
 import { VirusTotalService } from './scanners/virus_total.service';
-import { ScheduleRequestDto } from 'apps/scheduling_service/src/dto/scheduleRequest.dto';
+import { ScheduleRequestDto } from 'apps/scheduling/src/dto/scheduleRequest.dto';
+import { validateMessage } from 'apps/scheduling/src/message_validator';
+import { ScannerBase } from './scanners/scanner_base';
 
 @Injectable()
 export class ScanningService {
-  private readonly scannerServices: Scanner<any>[] = [];
+  private readonly scannerServices: ScannerBase[] = [];
 
   constructor(
     private readonly prisma: PrismaService,
@@ -27,7 +27,7 @@ export class ScanningService {
 
   private async scanDomain(
     domain: string,
-    scannerService: Scanner<any>,
+    scannerService: ScannerBase,
   ): Promise<{ result: object; scanApiId: number }> {
     const result = await scannerService.scan(domain);
     const { scanApiId } = await scannerService.upsertToScannerDb();
@@ -40,6 +40,7 @@ export class ScanningService {
   })
   async create(msg: any) {
     console.log('scanning service received message', msg);
+
     try {
       const { domain, domainId } = await validateMessage(
         msg,
@@ -47,10 +48,11 @@ export class ScanningService {
       );
 
       for (const scannerService of this.scannerServices) {
-        const { result, scanApiId } = await this.scanDomain(
+        const { scanApiId, result } = await this.scanDomain(
           domain,
           scannerService,
         );
+
         await this.prisma.results.upsert({
           create: {
             domainId,
@@ -67,7 +69,8 @@ export class ScanningService {
         });
       }
     } catch (error) {
-      console.error('Error scanning domain.', error.code);
+      console.error('Error scanning domain', error);
+      return;
     }
   }
 }

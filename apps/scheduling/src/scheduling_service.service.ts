@@ -3,9 +3,9 @@ import { AmqpConnection, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { validateMessage } from './message_validator';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
-import { DomainDto } from 'apps/products_service/src/domain.dto';
-import { PrismaService } from 'apps/domain_scanning_service/src/prisma.service';
+import { DomainDto } from 'apps/products/src/domain.dto';
 import { ScheduleRequestDto } from './dto/scheduleRequest.dto';
+import { PrismaService } from 'apps/scanning/src/prisma.service';
 
 const DEFAULT_INTERVAL = 1;
 const MAX_INTERVAL = 3;

@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
-import { ProductsServiceController } from 'apps/products_service/src/products_service.controller';
-import { ProductsServiceService } from 'apps/products_service/src/products_service.service';
+import { ProductsServiceController } from 'apps/products/src/products_service.controller';
+import { ProductsServiceService } from 'apps/products/src/products_service.service';
 import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { PrismaService } from './prisma.service';
-import { SchedulingServiceService } from 'apps/scheduling_service/src/scheduling_service.service';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ScanningService } from './scanning/scanning.service';
 import { HttpModule } from '@nestjs/axios';
 import { VirusTotalService } from './scanning/scanners/virus_total.service';
+import { SchedulingServiceService } from 'apps/scheduling/src/scheduling_service.service';
 
 const messagingClient = RabbitMQModule.forRoot(RabbitMQModule, {
   exchanges: [
