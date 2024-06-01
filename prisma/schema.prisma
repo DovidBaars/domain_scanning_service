@@ -48,3 +48,10 @@ id    Int     @id @default(autoincrement())
   method String
   interval Int?
 }
+
+model ServiceEntryLogs {
+id    Int     @id @default(autoincrement())
+service String
+routingKey String
+timestamp DateTime
+}

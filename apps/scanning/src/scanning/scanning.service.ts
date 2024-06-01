@@ -5,15 +5,18 @@ import { VirusTotalService } from './scanners/virus_total.service';
 import { ScheduleRequestDto } from 'apps/scheduling/src/dto/scheduleRequest.dto';
 import { validateMessage } from 'apps/scheduling/src/message_validator';
 import { ScannerBase } from './scanners/scanner_base';
+import { DSS_BaseService } from './dss_base.service';
 
 @Injectable()
-export class ScanningService {
+export class ScanningService extends DSS_BaseService {
   private readonly scannerServices: ScannerBase[] = [];
 
   constructor(
-    private readonly prisma: PrismaService,
+    protected readonly prisma: PrismaService,
     private virusTotalService: VirusTotalService,
-  ) {}
+  ) {
+    super(prisma);
+  }
 
   async onModuleInit() {
     console.log('Scanning service initialized');
@@ -39,8 +42,7 @@ export class ScanningService {
     routingKey: 'scan.*',
   })
   async create(msg: any) {
-    console.log('scanning service received message', msg);
-
+    this.logAccess({ service: this.constructor.name, routingKey: 'scan.*' });
     try {
       const { domain, domainId } = await validateMessage(
         msg,

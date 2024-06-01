@@ -6,18 +6,21 @@ import { CronJob } from 'cron';
 import { DomainDto } from 'apps/products/src/domain.dto';
 import { ScheduleRequestDto } from './dto/scheduleRequest.dto';
 import { PrismaService } from 'apps/scanning/src/prisma.service';
+import { DSS_BaseService } from 'apps/scanning/src/scanning/dss_base.service';
 
 const DEFAULT_INTERVAL = 1;
 const MAX_INTERVAL = 3;
 const MIN_INTERVAL = 1;
 
 @Injectable()
-export class SchedulingServiceService {
+export class SchedulingServiceService extends DSS_BaseService {
   constructor(
     private schedulerRegistry: SchedulerRegistry,
     private amqpConnection: AmqpConnection,
-    private readonly prisma: PrismaService,
-  ) {}
+    protected readonly prisma: PrismaService,
+  ) {
+    super(prisma);
+  }
 
   async onModuleInit() {
     await this.restartCronJobsFromDb();
@@ -101,6 +104,10 @@ export class SchedulingServiceService {
     routingKey: '*.schedule',
   })
   async create(msg: any) {
+    this.logAccess({
+      service: this.constructor.name,
+      routingKey: '*.schedule',
+    });
     try {
       const { domain, interval = DEFAULT_INTERVAL } = await validateMessage(
         msg,

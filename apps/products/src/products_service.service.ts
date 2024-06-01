@@ -5,14 +5,17 @@ import { PrismaService } from 'apps/scanning/src/prisma.service';
 import { ScheduleRequestDto } from 'apps/scheduling/src/dto/scheduleRequest.dto';
 import { DomainRecord } from './domain.interface';
 import { Response, Request } from 'express';
+import { DSS_BaseService } from 'apps/scanning/src/scanning/dss_base.service';
 
 @Injectable()
-export class ProductsServiceService {
+export class ProductsServiceService extends DSS_BaseService {
   domainRecords: DomainRecord[] = [];
   constructor(
     private readonly amqpConnection: AmqpConnection,
-    private readonly prisma: PrismaService,
-  ) {}
+    protected readonly prisma: PrismaService,
+  ) {
+    super(prisma);
+  }
 
   private async findDomainInDb(
     domain: string,
@@ -59,34 +62,18 @@ export class ProductsServiceService {
     );
   }
 
-  private async logAccess(
-    domain: string,
-    request: Request,
-    interval?: number,
-  ): Promise<void> {
-    console.log('Logging access');
-    try {
-      await this.prisma.accessLogs.create({
-        data: {
-          url: domain,
-          timestamp: new Date(),
-          userAgent: request.headers['user-agent'],
-          method: request.method,
-          interval,
-        },
-      });
-    } catch (e) {
-      console.error('Error logging access:', e);
-    }
-  }
-
   public async addDomain(
     domain: string,
     request: Request,
     response: Response,
     interval?: number,
   ): Promise<void> {
-    this.logAccess(domain, request, interval);
+    this.logAccess({
+      url: domain,
+      userAgent: request.headers['user-agent'],
+      method: request.method,
+      interval,
+    });
 
     try {
       const domainData: DomainRecord = await this.findDomainInDb(domain, false);
@@ -115,8 +102,12 @@ export class ProductsServiceService {
     response: Response,
     interval?: number,
   ): Promise<void> {
-    this.logAccess(domain, request, interval);
-
+    this.logAccess({
+      url: domain,
+      userAgent: request.headers['user-agent'],
+      method: request.method,
+      interval,
+    });
     try {
       const domainData: DomainRecord = await this.findDomainInDb(domain, true);
 
