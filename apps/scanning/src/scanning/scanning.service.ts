@@ -70,7 +70,7 @@ export class ScanningService extends DSS_BaseService {
             where: {
               domainId_scanApiId: {
                 domainId,
-                scanApiId: scanApiId,
+                scanApiId,
               },
             },
             update: { results: JSON.stringify(result) },
