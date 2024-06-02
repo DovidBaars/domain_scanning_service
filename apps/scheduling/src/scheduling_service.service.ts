@@ -134,7 +134,7 @@ export class SchedulingServiceService extends DSS_BaseService {
       );
     } catch (error) {
       console.error('Error scheduling domain:', error);
-      return new Nack(true);
+      return new Nack(false);
     }
   }
 }

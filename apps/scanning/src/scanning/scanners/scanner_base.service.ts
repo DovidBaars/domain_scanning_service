@@ -1,5 +1,6 @@
 import { PrismaService } from '../../prisma.service';
 import { VirusTotalDomain } from './dto/virus_total_domain.interface';
+import { PolyswarmService } from './polyswarm.service';
 
 export abstract class ScannerBase {
   readonly scannerApiKey: string;
@@ -13,7 +14,9 @@ export abstract class ScannerBase {
     this.apiUrl = api;
   }
 
-  abstract scan(url: string): Promise<object | VirusTotalDomain>;
+  abstract scan(
+    url: string,
+  ): Promise<object | VirusTotalDomain | PolyswarmService>;
 
   async upsertToScannerDb() {
     return await this.prisma.scanApi.upsert({

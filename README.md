@@ -112,3 +112,6 @@ $ npm run test:cov
 Either run entirely Dockerized, or just the rabbitmq server.
 docker-compose -f docker-compose.dev.yml -f docker-compose.rabbitmq.yml up
 with docker there is currently no hot reloading.
+
+- next:
+ -- add bad domain detection. Do not scan again, save etc if domain scans fail.

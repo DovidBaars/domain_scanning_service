@@ -9,6 +9,7 @@ import { ProductsServiceService } from '@products/products_service.service';
 import { VirusTotalService } from './scanning/scanners/virus_total.service';
 import { SchedulingServiceService } from '@scheduling/scheduling_service.service';
 import { ProductsServiceController } from '@products/products_service.controller';
+import { PolyswarmService } from './scanning/scanners/polyswarm.service';
 
 const messagingClient = RabbitMQModule.forRoot(RabbitMQModule, {
   exchanges: [
@@ -46,6 +47,7 @@ const messagingClient = RabbitMQModule.forRoot(RabbitMQModule, {
     PrismaService,
     ScanningService,
     VirusTotalService,
+    PolyswarmService,
   ],
   exports: [RabbitMQModule],
 })

@@ -3,7 +3,8 @@ import { Nack, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 
 import { PrismaService } from '../prisma.service';
 import { DSS_BaseService } from './dss_base.service';
-import { ScannerBase } from './scanners/scanner_base';
+import { ScannerBase } from './scanners/scanner_base.service';
+import { PolyswarmService } from './scanners/polyswarm.service';
 import { validateMessage } from '@scheduling/message_validator';
 import { VirusTotalService } from './scanners/virus_total.service';
 import { ScheduleRequestDto } from '@scheduling/dto/scheduleRequest.dto';
@@ -15,6 +16,7 @@ export class ScanningService extends DSS_BaseService {
   constructor(
     protected readonly prisma: PrismaService,
     private virusTotalService: VirusTotalService,
+    private polyswarmService: PolyswarmService,
   ) {
     super(prisma);
   }
@@ -25,7 +27,7 @@ export class ScanningService extends DSS_BaseService {
   }
 
   private async initScanners() {
-    this.scannerServices.push(this.virusTotalService);
+    this.scannerServices.push(this.virusTotalService, this.polyswarmService);
     console.log('Initializing scanners', this.scannerServices.length);
   }
 
@@ -55,29 +57,34 @@ export class ScanningService extends DSS_BaseService {
       );
 
       for (const scannerService of this.scannerServices) {
-        const { scanApiId, result } = await this.scanDomain(
-          domain,
-          scannerService,
-        );
+        const scanner: ScannerBase = scannerService;
+        try {
+          const { scanApiId, result } = await this.scanDomain(domain, scanner);
 
-        await this.prisma.results.upsert({
-          create: {
-            domainId,
-            scanApiId: scanApiId,
-            results: JSON.stringify(result),
-          },
-          where: {
-            domainId_scanApiId: {
+          await this.prisma.results.upsert({
+            create: {
               domainId,
               scanApiId: scanApiId,
+              results: JSON.stringify(result),
             },
-          },
-          update: { results: JSON.stringify(result) },
-        });
+            where: {
+              domainId_scanApiId: {
+                domainId,
+                scanApiId: scanApiId,
+              },
+            },
+            update: { results: JSON.stringify(result) },
+          });
+        } catch (error: any) {
+          throw new Error(error.message + `: ${scanner.constructor.name}`);
+        }
       }
-    } catch (error) {
-      console.error('Error scanning domain', error);
-      return new Nack(true);
+    } catch (error: any) {
+      console.error(
+        'Error scanning domain',
+        error.message ? error.message : error,
+      );
+      return new Nack(false);
     }
   }
 }
