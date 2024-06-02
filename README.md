@@ -109,4 +109,6 @@ $ npm run test:e2e
 # test coverage
 $ npm run test:cov
 
-docker run -it --name dss_mq -p 5672:5672 -p 15672:15672  -e RABBITMQ_DEFAULT_USER=user -e RABBITMQ_DEFAULT_PASS=password rabbitmq:3.13-management
+Either run entirely dockerized, or just the rabbitmq server.
+docker-compose -f docker-compose.dev.yml -f docker-compose.rabbitmq.yml up
+with docker there is currenly no hot reloading.
