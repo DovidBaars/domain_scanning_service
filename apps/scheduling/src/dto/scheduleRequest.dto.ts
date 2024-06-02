@@ -1,5 +1,6 @@
-import { ScanRequestDto } from 'apps/scanning/src/scanning/dto/ScanRequest.dto';
 import { IsInt } from 'class-validator';
+
+import { ScanRequestDto } from '@scanning/scanning/dto/ScanRequest.dto';
 
 export class ScheduleRequestDto extends ScanRequestDto {
   @IsInt()

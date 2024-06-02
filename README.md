@@ -109,6 +109,6 @@ $ npm run test:e2e
 # test coverage
 $ npm run test:cov
 
-Either run entirely dockerized, or just the rabbitmq server.
+Either run entirely Dockerized, or just the rabbitmq server.
 docker-compose -f docker-compose.dev.yml -f docker-compose.rabbitmq.yml up
-with docker there is currenly no hot reloading.
+with docker there is currently no hot reloading.

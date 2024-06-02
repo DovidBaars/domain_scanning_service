@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ScanningService } from './scanning.service';
-import { PrismaService } from '../prisma.service';
 import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
+
+import { PrismaService } from '../prisma.service';
+import { ScanningService } from './scanning.service';
 import { VirusTotalService } from './scanners/virus_total.service';
 
 @Module({

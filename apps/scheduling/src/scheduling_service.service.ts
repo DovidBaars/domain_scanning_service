@@ -1,12 +1,13 @@
-import { Injectable } from '@nestjs/common';
-import { AmqpConnection, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
-import { validateMessage } from './message_validator';
-import { SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
-import { DomainDto } from 'apps/products/src/domain.dto';
+import { Injectable } from '@nestjs/common';
+import { SchedulerRegistry } from '@nestjs/schedule';
+import { AmqpConnection, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
+
+import { DomainDto } from '@products/domain.dto';
+import { validateMessage } from './message_validator';
+import { PrismaService } from '@scanning/prisma.service';
 import { ScheduleRequestDto } from './dto/scheduleRequest.dto';
-import { PrismaService } from 'apps/scanning/src/prisma.service';
-import { DSS_BaseService } from 'apps/scanning/src/scanning/dss_base.service';
+import { DSS_BaseService } from '@scanning/scanning/dss_base.service';
 
 const DEFAULT_INTERVAL = 1;
 const MAX_INTERVAL = 3;

@@ -1,11 +1,12 @@
+import { Domain } from '@prisma/client';
 import { Injectable } from '@nestjs/common';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
-import { Domain } from '@prisma/client';
-import { PrismaService } from 'apps/scanning/src/prisma.service';
-import { ScheduleRequestDto } from 'apps/scheduling/src/dto/scheduleRequest.dto';
-import { DomainRecord } from './domain.interface';
 import { Response, Request } from 'express';
-import { DSS_BaseService } from 'apps/scanning/src/scanning/dss_base.service';
+
+import { DomainRecord } from './domain.interface';
+import { PrismaService } from '@scanning/prisma.service';
+import { DSS_BaseService } from '@scanning/scanning/dss_base.service';
+import { ScheduleRequestDto } from '@scheduling/dto/scheduleRequest.dto';
 
 @Injectable()
 export class ProductsServiceService extends DSS_BaseService {

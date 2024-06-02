@@ -1,6 +1,6 @@
+import { validate } from 'class-validator';
 import { BadRequestException } from '@nestjs/common';
 import { ClassConstructor, plainToInstance } from 'class-transformer';
-import { validate } from 'class-validator';
 
 export async function validateMessage<T extends object, V>(
   msg: V,

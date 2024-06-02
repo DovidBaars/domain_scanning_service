@@ -19,10 +19,10 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "apps/*": ["apps/*"],
-      "scheduling/*": ["apps/scheduling/src/*"], 
-      "scanning/*": ["apps/scanning/src/*"],
-      "products/*": ["apps/products/src/*"],
+      "@apps/*": ["apps/*"],
+      "@scheduling/*": ["apps/scheduling/src/*"], 
+      "@scanning/*": ["apps/scanning/src/*"],
+      "@products/*": ["apps/products/src/*"],
     } 
   }
 }

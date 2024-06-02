@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Query, Req, Res } from '@nestjs/common';
-import { ProductsServiceService } from './products_service.service';
-import { DomainDto } from './domain.dto';
 import { Request, Response } from 'express';
+import { Controller, Get, Post, Query, Req, Res } from '@nestjs/common';
+
+import { DomainDto } from './domain.dto';
+import { ProductsServiceService } from './products_service.service';
 
 @Controller('domain')
 export class ProductsServiceController {

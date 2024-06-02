@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
+
 import { PrismaService } from '../prisma.service';
-import { VirusTotalService } from './scanners/virus_total.service';
-import { ScheduleRequestDto } from 'apps/scheduling/src/dto/scheduleRequest.dto';
-import { validateMessage } from 'apps/scheduling/src/message_validator';
-import { ScannerBase } from './scanners/scanner_base';
 import { DSS_BaseService } from './dss_base.service';
+import { ScannerBase } from './scanners/scanner_base';
+import { validateMessage } from '@scheduling/message_validator';
+import { VirusTotalService } from './scanners/virus_total.service';
+import { ScheduleRequestDto } from '@scheduling/dto/scheduleRequest.dto';
 
 @Injectable()
 export class ScanningService extends DSS_BaseService {

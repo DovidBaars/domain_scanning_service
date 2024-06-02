@@ -1,9 +1,10 @@
 import { firstValueFrom, map } from 'rxjs';
-import { VirusTotalDomain } from './dto/virus_total_domain.interface';
-import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+
 import { ScannerBase } from './scanner_base';
 import { PrismaService } from '../../prisma.service';
+import { VirusTotalDomain } from './dto/virus_total_domain.interface';
 
 @Injectable()
 export class VirusTotalService extends ScannerBase {

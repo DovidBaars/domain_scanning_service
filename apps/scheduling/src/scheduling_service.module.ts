@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
-import { SchedulingServiceService } from './scheduling_service.service';
 import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
-import { PrismaService } from 'apps/scanning/src/prisma.service';
+
+import { PrismaService } from '@scanning/prisma.service';
+import { SchedulingServiceService } from './scheduling_service.service';
 
 @Module({
   imports: [RabbitMQModule],
