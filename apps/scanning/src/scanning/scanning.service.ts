@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
+import { Nack, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 
 import { PrismaService } from '../prisma.service';
 import { DSS_BaseService } from './dss_base.service';
@@ -41,6 +41,10 @@ export class ScanningService extends DSS_BaseService {
   @RabbitSubscribe({
     exchange: 'dss-exchange',
     routingKey: 'scan.*',
+    queueOptions: {
+      durable: true,
+      deadLetterExchange: 'dead-letter-exchange',
+    },
   })
   async create(msg: any) {
     this.logAccess({ service: this.constructor.name, routingKey: 'scan.*' });
@@ -73,7 +77,7 @@ export class ScanningService extends DSS_BaseService {
       }
     } catch (error) {
       console.error('Error scanning domain', error);
-      return;
+      return new Nack(true);
     }
   }
 }

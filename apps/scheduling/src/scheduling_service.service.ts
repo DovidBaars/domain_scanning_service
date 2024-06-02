@@ -1,7 +1,11 @@
+import {
+  AmqpConnection,
+  Nack,
+  RabbitSubscribe,
+} from '@golevelup/nestjs-rabbitmq';
 import { CronJob } from 'cron';
 import { Injectable } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
-import { AmqpConnection, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 
 import { DomainDto } from '@products/domain.dto';
 import { validateMessage } from './message_validator';
@@ -103,6 +107,10 @@ export class SchedulingServiceService extends DSS_BaseService {
   @RabbitSubscribe({
     exchange: 'dss-exchange',
     routingKey: '*.schedule',
+    queueOptions: {
+      durable: true,
+      deadLetterExchange: 'dead-letter-exchange',
+    },
   })
   async create(msg: any) {
     this.logAccess({
@@ -126,6 +134,7 @@ export class SchedulingServiceService extends DSS_BaseService {
       );
     } catch (error) {
       console.error('Error scheduling domain:', error);
+      return new Nack(true);
     }
   }
 }

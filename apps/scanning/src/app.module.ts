@@ -15,10 +15,26 @@ const messagingClient = RabbitMQModule.forRoot(RabbitMQModule, {
     {
       name: 'dss-exchange',
       type: 'topic',
+      options: { durable: true },
+    },
+    {
+      name: 'dead-letter-exchange',
+      type: 'topic',
+      options: { durable: true },
     },
   ],
   uri: process.env.RABBITMQ_URL || 'amqp://user:password@localhost:5672',
   connectionInitOptions: { wait: false },
+  queues: [
+    {
+      name: 'dead-letter-queue',
+      options: {
+        durable: true,
+      },
+      exchange: 'dead-letter-exchange',
+      routingKey: '#',
+    },
+  ],
 });
 
 @Module({
