@@ -22,6 +22,7 @@ export class PolyswarmService extends ScannerBase {
   public async scan(domain: string) {
     const url = new URL(domain);
     const transformedDomain = url.hostname;
+    // get types from Polyswarm
     const results: VirusTotalDomain = await firstValueFrom(
       this.httpService
         .get(`${this.apiUrl}/url`, {
