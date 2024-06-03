@@ -29,15 +29,6 @@ export class SchedulingServiceService extends DSS_BaseService {
 
   async onModuleInit() {
     await this.restartCronJobsFromDb();
-    this.printCronJobs();
-  }
-
-  private printCronJobs() {
-    const jobs = this.schedulerRegistry.getCronJobs();
-    console.log('Currently running cron jobs: ', jobs.size);
-    jobs.forEach((value, key) => {
-      console.log(`- ${key}`);
-    });
   }
 
   private async restartCronJobsFromDb() {
@@ -78,10 +69,9 @@ export class SchedulingServiceService extends DSS_BaseService {
     const cronJob = new CronJob(cronTime, cronJobCallback, null, null, 'UTC');
     try {
       this.schedulerRegistry.addCronJob(name, cronJob);
-      console.warn(`Job ${name} added with cron time: ${cronTime}`);
-      updateDbCallback(name, cronTime);
+      updateDbCallback?.(name, cronTime);
     } catch (e) {
-      console.error(`Job ${name} already exists`);
+      console.error(`Job ${name} threw an error: ${e}`);
     }
   }
 
