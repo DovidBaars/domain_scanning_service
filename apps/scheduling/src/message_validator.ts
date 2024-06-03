@@ -8,7 +8,6 @@ export async function validateMessage<T extends object, V>(
 ): Promise<T> {
   const message = plainToInstance(dtoClass, msg);
   const errors = await validate(message);
-  console.log('Errors:', errors);
   if (errors.length > 0) {
     throw new BadRequestException('Validation failed');
   }

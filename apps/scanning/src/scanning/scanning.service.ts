@@ -22,13 +22,11 @@ export class ScanningService extends DSS_BaseService {
   }
 
   async onModuleInit() {
-    console.log('Scanning service initialized');
     this.initScanners();
   }
 
   private async initScanners() {
     this.scannerServices.push(this.virusTotalService, this.polyswarmService);
-    console.log('Initializing scanners', this.scannerServices.length);
   }
 
   private async scanDomain(

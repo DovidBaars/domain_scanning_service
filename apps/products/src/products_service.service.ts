@@ -50,7 +50,6 @@ export class ProductsServiceService extends DSS_BaseService {
   }
 
   private async addScanReqToQueue(domain: Domain): Promise<boolean> {
-    console.log('Publishing message to queue');
     const scanScheduleMsg: ScheduleRequestDto = {
       domain: domain.url,
       domainId: domain.id,

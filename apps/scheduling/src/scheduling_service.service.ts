@@ -14,17 +14,20 @@ import { ScheduleRequestDto } from './dto/scheduleRequest.dto';
 import { DSS_BaseService } from '@scanning/scanning/dss_base.service';
 
 const DEFAULT_INTERVAL = 1;
-const MAX_INTERVAL = 3;
+const HOURLY_INTERVAL = 24;
 const MIN_INTERVAL = 1;
 
 @Injectable()
 export class SchedulingServiceService extends DSS_BaseService {
+  private readonly intervalGenerator: (timesPerDay: number) => string;
+  private readonly maxInterval = HOURLY_INTERVAL;
   constructor(
     private schedulerRegistry: SchedulerRegistry,
     private amqpConnection: AmqpConnection,
     protected readonly prisma: PrismaService,
   ) {
     super(prisma);
+    this.intervalGenerator = this.hoursInDayCronStringIntervalGenerator;
   }
 
   async onModuleInit() {
@@ -44,20 +47,21 @@ export class SchedulingServiceService extends DSS_BaseService {
     }
   }
 
-  private validateTimesPerDay(timesPerDay: number) {
-    return Math.max(MIN_INTERVAL, Math.min(timesPerDay, MAX_INTERVAL));
+  private validateIntervalBetweenMinMax(timesPerDay: number) {
+    return Math.max(MIN_INTERVAL, Math.min(timesPerDay, this.maxInterval));
   }
 
-  private generateDailyCronTime(timesPerDay: number) {
-    timesPerDay = this.validateTimesPerDay(timesPerDay);
-
+  private hoursInDayCronStringIntervalGenerator(timesPerDay: number) {
     const hours = new Set<number>();
     while (hours.size < timesPerDay) {
-      const hour = Math.floor(Math.random() * 24);
-      hours.add(hour);
+      hours.add(Math.floor(Math.random() * this.maxInterval));
     }
-
     return `0 ${Array.from(hours).join(',')} * * *`;
+  }
+
+  private generateCronTimeFromInterval(interval: number) {
+    interval = this.validateIntervalBetweenMinMax(interval);
+    return this.intervalGenerator(interval);
   }
 
   private addCronJobForDailyScanning(
@@ -114,7 +118,7 @@ export class SchedulingServiceService extends DSS_BaseService {
       );
       this.addCronJobForDailyScanning(
         domain,
-        this.generateDailyCronTime(interval),
+        this.generateCronTimeFromInterval(interval),
         () => {
           this.addMessageToQueue(domain);
           this.upsertCronJobToDB(domain);

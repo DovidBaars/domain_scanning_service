@@ -16,7 +16,6 @@ export class ProductsServiceController {
     @Res() response: Response,
     @Query() { domain, interval }: DomainDto,
   ): Promise<void> {
-    console.log('GET domain request:', domain, interval);
     return await this.productsServiceService.getDomainResults(
       domain,
       request,
@@ -31,7 +30,6 @@ export class ProductsServiceController {
     @Res() response: Response,
     @Query() { domain, interval }: DomainDto,
   ): Promise<void> {
-    console.log('POST domain request:', domain, interval);
     await this.productsServiceService.addDomain(
       domain,
       request,

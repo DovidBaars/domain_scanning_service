@@ -35,7 +35,6 @@ export class PolyswarmService extends ScannerBase {
         })
         .pipe(map((response) => response.data)),
     );
-    console.log('results: ', !!results);
     if (!results) {
       throw new Error('No results from Polyswarm');
     }
