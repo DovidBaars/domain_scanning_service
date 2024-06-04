@@ -88,8 +88,6 @@ Each service interacts with the database to store and retrieve data.
 
 # Visual Representation:
 
-# Visual Representation:
-
 ![System Architecture](./system-diagram.png)
 
 All services (Products, Scanning, and Scheduling) interact with the Database directly.
