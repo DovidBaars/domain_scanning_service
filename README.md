@@ -1,3 +1,40 @@
+# Domain Scanning Service Backend
+
+## A backend service for managing domain scans and scheduling.
+## Built using NestJS, PrismaORM, RabbitMQ, and SQLite.
+
+### Features:
+- REST API for requesting domain scans, scan schedules, and viewing scan results.
+- Asynchronous processing using RabbitMQ for decoupled services.
+- Scheduled scans using cron expressions.
+- SQLite database for storing domain information, scan results, and cron records.
+
+### Installation:
+1. Clone the repository.
+2. In the repo's root directory run `docker-compose -f docker-compose.dev.yml -f docker-compose.rabbit.yml up` to start the backend service, RabbitMQ server, and SQLite database.
+4. You can send REST requests to the backend service at `http://localhost:3000`.
+
+### Dev Installation:
+For hot reloading run outside of docker:
+1. Clone the repository.
+2. Run `npm install` to install dependencies.
+3. Run `npx prisma migrate dev` to create the SQLite database.
+4. Run `npx prisma generate` to generate the Prisma client.
+5. Run `npm run start:dev` to start the backend service in development mode.
+6. Run `docker-compose -f docker-compose.rabbit.yml up` to start the RabbitMQ server.
+
+#### API Endpoints:
+- GET `/domain`: Get a specific domain scan result. If the domain is not found, a new scan, and cron schedule is initiated.
+    -- query: domain: string (required) - The domain to scan.
+    -- query: interval: number (optional) - The cron interval in times per day. Default is 1.
+
+- POST `/domain`: Create a new domain scan request.
+    -- query: domain: string (required) - The domain to scan.
+    -- query: interval: number (optional) - The cron interval in times per day. Default is 1.
+
+- Example:
+    curl --location 'http://localhost:3000/domain?domain=https%3A%2F%2Fwww.facebook.com&interval=2'
+
 # Services:
 
 ## Products Service (API Gateway):
@@ -59,51 +96,7 @@ Each service interacts with the database to store and retrieve data.
 
 # Visual Representation:
 
-+--------------+     (REST API)    +--------------+      (Message Queue)     +----------------+
-|  Client      |  ------------>  | Products Service|  -------------------->  | Scanning Service |
-+--------------+                  +--------------+                          +----------------+
-|                                                 | (Message Queue)
-|                                                 v
-                                    *---------------------*
-                                     | Scheduling Service |
-                                    +---------------------+
+![System Architecture](./system-diagram.png)
 
 All services (Products, Scanning, and Scheduling) interact with the Database directly.
 
-## Installation
-
-```bash
-$ npm install
-```
-
-## Running the app
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Test
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-
-Either run entirely Dockerized, or just the rabbitmq server.
-docker-compose -f docker-compose.dev.yml -f docker-compose.rabbitmq.yml up
-with docker there is currently no hot reloading.
-
-- next:
- -- add bad domain detection. Do not scan again, save etc if domain scans fail.

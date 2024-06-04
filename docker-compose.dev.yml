@@ -1,12 +1,10 @@
 services:
   app:
     build: .
-    command: npm run start:dev
+    command: npm run start:docker
     volumes:
       - .:/usr/src/app
     ports:
       - "3000:3000"
-    depends_on:
-      - rabbitmq
     environment:
       - RABBITMQ_URL=amqp://user:password@rabbitmq:5672
