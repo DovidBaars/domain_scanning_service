@@ -11,7 +11,7 @@
 
 ### Installation:
 1. Clone the repository.
-2. In the repo's root directory run `docker-compose -f docker-compose.dev.yml -f docker-compose.rabbitmq.yml up`
+2. In the repo's root directory run `docker-compose -f docker-compose.dev.yml -f docker-compose.rabbit.yml up`
 3. This will start the RabbitMQ server and the backend service.
 4. You can send REST requests to the backend service at `http://localhost:3000`.
 
