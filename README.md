@@ -11,9 +11,17 @@
 
 ### Installation:
 1. Clone the repository.
-2. In the repo's root directory run `docker-compose -f docker-compose.dev.yml -f docker-compose.rabbitmq.yml up`
-3. This will start the RabbitMQ server and the backend service.
+2. In the repo's root directory run `docker-compose -f docker-compose.dev.yml -f docker-compose.rabbit.yml up` to start the backend service, RabbitMQ server, and SQLite database.
 4. You can send REST requests to the backend service at `http://localhost:3000`.
+
+### Dev Installation:
+For hot reloading run outside of docker:
+1. Clone the repository.
+2. Run `npm install` to install dependencies.
+3. Run `npx prisma migrate dev` to create the SQLite database.
+4. Run `npx prisma generate` to generate the Prisma client.
+5. Run `npm run start:dev` to start the backend service in development mode.
+6. Run `docker-compose -f docker-compose.rabbit.yml up` to start the RabbitMQ server.
 
 #### API Endpoints:
 - GET `/domain`: Get a specific domain scan result. If the domain is not found, a new scan, and cron schedule is initiated.

@@ -6,8 +6,12 @@ COPY package*.json ./
 
 RUN npm install
 
+COPY start.sh .
+
+RUN chmod +x start.sh
+
 COPY . .
 
 EXPOSE 3000
 
-CMD [ "npm", "run", "start" ]
+CMD [ "/bin/sh", "start.sh" ]
