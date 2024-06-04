@@ -24,6 +24,9 @@
     -- query: domain: string (required) - The domain to scan.
     -- query: interval: number (optional) - The cron interval in times per day. Default is 1.
 
+- Example:
+    curl --location 'http://localhost:3000/domain?domain=https%3A%2F%2Fwww.facebook.com&interval=2'
+
 # Services:
 
 ## Products Service (API Gateway):
