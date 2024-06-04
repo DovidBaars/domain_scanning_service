@@ -6,6 +6,8 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "start:docker": "npm run migrateAndGeneratePrisma && npm run start:dev",
+    "migrateAndGeneratePrisma": "prisma migrate dev && prisma generate",
     "build": "nest build",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "start": "nest start",
