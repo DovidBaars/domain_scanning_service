@@ -5,8 +5,8 @@ import { Response, Request } from 'express';
 
 import { DomainRecord } from './domain.interface';
 import { PrismaService } from '@scanning/prisma.service';
-import { DSS_BaseService } from '@scanning/scanning/dss_base.service';
 import { ScheduleRequestDto } from '@scheduling/dto/scheduleRequest.dto';
+import { DSS_BaseService } from '@apps/scanning/src/scanning/base.service';
 
 @Injectable()
 export class ProductsServiceService extends DSS_BaseService {
