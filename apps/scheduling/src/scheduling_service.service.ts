@@ -11,7 +11,7 @@ import { DomainDto } from '@products/domain.dto';
 import { validateMessage } from './message_validator';
 import { PrismaService } from '@scanning/prisma.service';
 import { ScheduleRequestDto } from './dto/scheduleRequest.dto';
-import { DSS_BaseService } from '@scanning/scanning/dss_base.service';
+import { DSS_BaseService } from '@apps/scanning/src/scanning/base.service';
 
 const DEFAULT_INTERVAL = 1;
 const HOURLY_INTERVAL = 24;
