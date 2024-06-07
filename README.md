@@ -20,8 +20,8 @@ For hot reloading run outside of docker:
 2. Run `npm install` to install dependencies.
 3. Run `npx prisma migrate dev` to create the SQLite database.
 4. Run `npx prisma generate` to generate the Prisma client.
-5. Run `npm run start:dev` to start the backend service in development mode.
-6. Run `docker-compose -f docker-compose.rabbit.yml up` to start the RabbitMQ server.
+5. Run `docker-compose -f docker-compose.rabbit.yml up` to start the RabbitMQ server.
+6. Run `npm run start:dev` to start the backend service in development mode.
 
 #### API Endpoints:
 - GET `/domain`: Get a specific domain scan result. If the domain is not found, a new scan, and cron schedule is initiated.
