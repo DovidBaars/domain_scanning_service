@@ -9,7 +9,7 @@
     "start:docker": "npm run migrateAndGeneratePrisma && npm run start:dev",
     "migrateAndGeneratePrisma": "prisma migrate dev && prisma generate",
     "build": "nest build",
-    "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
+    "format": "prettier --write \"apps/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
