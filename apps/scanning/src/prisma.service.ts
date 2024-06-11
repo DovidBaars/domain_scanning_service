@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string */
 import { PrismaClient } from '@prisma/client';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 
@@ -26,7 +27,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     });
   }
 
-  async onModuleInit() {
+  async onModuleInit(): Promise<void> {
     await this.$connect();
   }
 }

@@ -1,13 +1,15 @@
+import { ERROR_MESSAGE } from '@apps/constants/errors';
 import { PrismaService } from '../prisma.service';
+import { LOG } from '@apps/constants/log';
 
-interface AccessLog {
+interface IAccessLog {
   url: string;
   userAgent: string;
   method: string;
   interval?: number;
 }
 
-interface ServiceEntryLog {
+interface IServiceEntryLog {
   service: string;
   routingKey: string;
 }
@@ -15,9 +17,9 @@ interface ServiceEntryLog {
 export class DSS_BaseService {
   constructor(protected readonly prisma: PrismaService) {}
   protected async logAccess(
-    accessLog: AccessLog | ServiceEntryLog,
+    accessLog: IAccessLog | IServiceEntryLog,
   ): Promise<void> {
-    console.log('Logging access', accessLog);
+    console.log(LOG.ACCESS, accessLog);
     try {
       if ('service' in accessLog) {
         const { service, routingKey } = accessLog;
@@ -41,8 +43,8 @@ export class DSS_BaseService {
           interval,
         },
       });
-    } catch (e) {
-      console.error('Error logging access:', e);
+    } catch (error) {
+      console.error(ERROR_MESSAGE.ACCESS_LOG, error);
     }
   }
 }

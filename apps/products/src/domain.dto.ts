@@ -5,7 +5,7 @@ export class DomainDto {
   @IsUrl()
   domain: string;
 
-  @Transform(({ value }) => parseInt(value), { toClassOnly: true })
+  @Transform(({ value }) => Number.parseInt(value), { toClassOnly: true })
   @IsInt()
   @IsOptional()
   interval: number;

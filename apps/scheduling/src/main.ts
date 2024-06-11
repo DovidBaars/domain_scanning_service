@@ -1,8 +1,5 @@
 import { NestFactory } from '@nestjs/core';
 
-import { SchedulingServiceModule } from './scheduling_service.module';
+import { SchedulingServiceModule } from './scheduling.module';
 
-async function bootstrap() {
-  await NestFactory.create(SchedulingServiceModule);
-}
-bootstrap();
+await NestFactory.create(SchedulingServiceModule);

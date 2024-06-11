@@ -1,21 +1,26 @@
 export type DomainScannerClientType = (
   domain: string,
-  options: DomainScannerClientOptions,
+  options: IDomainScannerClientOptions,
   callback: DomainScannerClientCallback,
 ) => void;
 
-export interface DomainScannerClientCbRes {
+export interface IDomainScannerClientCallbackResponse {
   data: { [key: string]: { response_code: number } };
   domain: string;
 }
 
 export type DomainScannerClientCallback = (
-  err: string,
-  res: DomainScannerClientCbRes,
+  error: string,
+  response: IDomainScannerClientCallbackResponse,
 ) => void;
 
-export interface DomainScannerClientOptions {
+export interface IDomainScannerClientOptions {
   keys: {
     [key: string]: string;
   };
+}
+
+export interface IScanClientApi {
+  id: number;
+  name: string;
 }

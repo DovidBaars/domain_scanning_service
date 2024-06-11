@@ -7,15 +7,22 @@ import { CronJob } from 'cron';
 import { Injectable } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
 
+import {
+  HOURLY_INTERVAL,
+  MIN_INTERVAL,
+  DEFAULT_INTERVAL,
+} from '@apps/constants/cron-interval';
+import {
+  EXCHANGE,
+  ROUTING_KEY,
+  SCHEDULE_REGISTRY_TYPE,
+} from '@apps/constants/message-queue';
 import { DomainDto } from '@products/domain.dto';
-import { validateMessage } from './message_validator';
+import { validateMessage } from './message-validator';
+import { ScheduleRequestDto } from './dto/request.dto';
+import { ERROR_MESSAGE } from '@apps/constants/errors';
 import { PrismaService } from '@scanning/prisma.service';
-import { ScheduleRequestDto } from './dto/scheduleRequest.dto';
 import { DSS_BaseService } from '@apps/scanning/src/scanning/base.service';
-
-const DEFAULT_INTERVAL = 1;
-const HOURLY_INTERVAL = 24;
-const MIN_INTERVAL = 1;
 
 @Injectable()
 export class SchedulingServiceService extends DSS_BaseService {
@@ -30,36 +37,38 @@ export class SchedulingServiceService extends DSS_BaseService {
     this.intervalGenerator = this.hoursInDayCronStringIntervalGenerator;
   }
 
-  async onModuleInit() {
+  async onModuleInit(): Promise<void> {
     await this.restartCronJobsFromDb();
   }
 
-  private async restartCronJobsFromDb() {
+  private async restartCronJobsFromDb(): Promise<void> {
     const cronTasks = await this.prisma.cronTask.findMany();
     for (const task of cronTasks) {
-      if (this.schedulerRegistry.doesExist('cron', task.url)) {
+      if (
+        this.schedulerRegistry.doesExist(SCHEDULE_REGISTRY_TYPE.CRON, task.url)
+      ) {
         continue;
       }
       this.addCronJobForDailyScanning(task.url, task.cronString, () => {
-        this.addMessageToQueue(task.url);
+        this.addMessageToScanningQueue(task.url);
         this.upsertCronJobToDB(task.url);
       });
     }
   }
 
-  private validateIntervalBetweenMinMax(timesPerDay: number) {
+  private validateIntervalBetweenMinMax(timesPerDay: number): number {
     return Math.max(MIN_INTERVAL, Math.min(timesPerDay, this.maxInterval));
   }
 
-  private hoursInDayCronStringIntervalGenerator(timesPerDay: number) {
+  private hoursInDayCronStringIntervalGenerator(timesPerDay: number): string {
     const hours = new Set<number>();
     while (hours.size < timesPerDay) {
       hours.add(Math.floor(Math.random() * this.maxInterval));
     }
-    return `0 ${Array.from(hours).join(',')} * * *`;
+    return `0 ${[...hours].join(',')} * * *`;
   }
 
-  private generateCronTimeFromInterval(interval: number) {
+  private generateCronTimeFromInterval(interval: number): string {
     interval = this.validateIntervalBetweenMinMax(interval);
     return this.intervalGenerator(interval);
   }
@@ -68,24 +77,35 @@ export class SchedulingServiceService extends DSS_BaseService {
     name: string,
     cronTime: string,
     cronJobCallback: () => void,
-    updateDbCallback?: (name: string, cronTime: string) => void,
-  ) {
-    const cronJob = new CronJob(cronTime, cronJobCallback, null, null, 'UTC');
+    updateDatabaseCallback?: (name: string, cronTime: string) => void,
+  ): void {
+    const cronJob = new CronJob(
+      cronTime,
+      cronJobCallback,
+      undefined,
+      undefined,
+      'UTC',
+    );
     try {
       this.schedulerRegistry.addCronJob(name, cronJob);
-      updateDbCallback?.(name, cronTime);
-    } catch (e) {
-      console.error(`Job ${name} threw an error: ${e}`);
+      updateDatabaseCallback?.(name, cronTime);
+    } catch (error) {
+      console.error(`Job ${name} threw an error: ${error}`);
     }
   }
 
-  private async addMessageToQueue(domain: DomainDto['domain']) {
-    await this.amqpConnection.publish('dss-exchange', 'scan', {
+  private async addMessageToScanningQueue(
+    domain: DomainDto['domain'],
+  ): Promise<void> {
+    await this.amqpConnection.publish(EXCHANGE.MAIN, ROUTING_KEY.SCAN, {
       domain,
     });
   }
 
-  private async upsertCronJobToDB(domain: string, cronString: string = '') {
+  private async upsertCronJobToDB(
+    domain: string,
+    cronString: string = '',
+  ): Promise<void> {
     await this.prisma.cronTask.upsert({
       create: {
         url: domain,
@@ -99,35 +119,35 @@ export class SchedulingServiceService extends DSS_BaseService {
   }
 
   @RabbitSubscribe({
-    exchange: 'dss-exchange',
-    routingKey: '*.schedule',
+    exchange: EXCHANGE.MAIN,
+    routingKey: `*.${ROUTING_KEY.SCHEDULE}`,
     queueOptions: {
       durable: true,
-      deadLetterExchange: 'dead-letter-exchange',
+      deadLetterExchange: EXCHANGE.DEAD_LETTER,
     },
   })
-  async create(msg: any) {
+  async create(message: ScheduleRequestDto): Promise<Nack | void> {
     this.logAccess({
       service: this.constructor.name,
-      routingKey: '*.schedule',
+      routingKey: `*.${ROUTING_KEY.SCHEDULE}`,
     });
     try {
       const { domain, interval = DEFAULT_INTERVAL } = await validateMessage(
-        msg,
+        message,
         ScheduleRequestDto,
       );
       this.addCronJobForDailyScanning(
         domain,
         this.generateCronTimeFromInterval(interval),
         () => {
-          this.addMessageToQueue(domain);
+          this.addMessageToScanningQueue(domain);
           this.upsertCronJobToDB(domain);
         },
         (domainForUpsert, cronStringForUpsert) =>
           this.upsertCronJobToDB(domainForUpsert, cronStringForUpsert),
       );
     } catch (error) {
-      console.error('Error scheduling domain:', error);
+      console.error(ERROR_MESSAGE.SCHEDULING, error);
       return new Nack(false);
     }
   }

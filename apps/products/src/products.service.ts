@@ -1,16 +1,19 @@
 import { Domain } from '@prisma/client';
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpStatus } from '@nestjs/common';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import { Response, Request } from 'express';
 
-import { DomainRecord } from './domain.interface';
+import { IDomainRecord } from './domain.interface';
 import { PrismaService } from '@scanning/prisma.service';
-import { ScheduleRequestDto } from '@scheduling/dto/scheduleRequest.dto';
+import { ScheduleRequestDto } from '@apps/scheduling/src/dto/request.dto';
 import { DSS_BaseService } from '@apps/scanning/src/scanning/base.service';
+import { EXCHANGE, ROUTING_KEY } from '@apps/constants/message-queue';
+import { API_RESPONSE } from '@apps/constants/api';
+import { ERROR_MESSAGE } from '@apps/constants/errors';
 
 @Injectable()
 export class ProductsServiceService extends DSS_BaseService {
-  domainRecords: DomainRecord[] = [];
+  domainRecords: IDomainRecord[] = [];
   constructor(
     private readonly amqpConnection: AmqpConnection,
     protected readonly prisma: PrismaService,
@@ -21,7 +24,7 @@ export class ProductsServiceService extends DSS_BaseService {
   private async findDomainInDb(
     domain: string,
     extended: boolean,
-  ): Promise<DomainRecord> {
+  ): Promise<IDomainRecord> {
     const domainRecord = (await this.prisma.domain.findUnique({
       where: { url: domain },
       include: {
@@ -33,7 +36,7 @@ export class ProductsServiceService extends DSS_BaseService {
             }
           : undefined,
       },
-    })) as DomainRecord | null;
+    })) as IDomainRecord | null;
     if (domainRecord) {
       this.domainRecords.push(domainRecord);
     }
@@ -50,15 +53,15 @@ export class ProductsServiceService extends DSS_BaseService {
   }
 
   private async addScanReqToQueue(domain: Domain): Promise<boolean> {
-    const scanScheduleMsg: ScheduleRequestDto = {
+    const scanScheduleMessage: ScheduleRequestDto = {
       domain: domain.url,
       domainId: domain.id,
       interval: domain.interval,
     };
     return await this.amqpConnection.publish(
-      'dss-exchange',
-      'scan.schedule',
-      scanScheduleMsg,
+      EXCHANGE.MAIN,
+      `${ROUTING_KEY.SCAN}.${ROUTING_KEY.SCHEDULE}`,
+      scanScheduleMessage,
     );
   }
 
@@ -76,23 +79,30 @@ export class ProductsServiceService extends DSS_BaseService {
     });
 
     try {
-      const domainData: DomainRecord = await this.findDomainInDb(domain, false);
+      const domainData: IDomainRecord = await this.findDomainInDb(
+        domain,
+        false,
+      );
 
       if (domainData) {
-        response.status(404).send('Domain is already in our system.');
+        response.status(HttpStatus.CONFLICT).send(API_RESPONSE.DOMAIN_CONFLICT);
         return;
       }
 
       const domainRecord = await this.addDomainToDb(domain, interval);
       if (!domainRecord || !(await this.addScanReqToQueue(domainRecord))) {
-        response.status(500).send('Error adding domain.');
+        response
+          .status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .send(API_RESPONSE.ADD_DOMAIN_ERROR);
         return;
       }
-      response.status(202).send('Domain added.');
+      response.status(HttpStatus.ACCEPTED).send(API_RESPONSE.ADD_DOMAIN);
       return;
-    } catch (e) {
-      console.error('Error getting domain:', e);
-      response.status(500).send('Error adding domain.');
+    } catch (error) {
+      console.error(ERROR_MESSAGE.GET, error);
+      response
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .send(API_RESPONSE.ADD_DOMAIN_ERROR);
     }
   }
 
@@ -109,34 +119,32 @@ export class ProductsServiceService extends DSS_BaseService {
       interval,
     });
     try {
-      const domainData: DomainRecord = await this.findDomainInDb(domain, true);
+      const domainData: IDomainRecord = await this.findDomainInDb(domain, true);
 
       if (domainData?.['results'].length > 0) {
-        response.status(200).json(domainData);
+        response.status(HttpStatus.OK).json(domainData);
         return;
       }
 
       if (domainData) {
-        response
-          .status(404)
-          .send(
-            'Domain found in DB, but no records found. Please check back later.',
-          );
+        response.status(HttpStatus.NOT_FOUND).send(API_RESPONSE.GET_NO_RESULTS);
         return;
       }
 
       const domainRecord = await this.addDomainToDb(domain, interval);
       if (!domainRecord || !(await this.addScanReqToQueue(domainRecord))) {
-        response.status(500).send('Error adding domain.');
+        response
+          .status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .send(API_RESPONSE.ADD_DOMAIN_ERROR);
         return;
       }
-      response
-        .status(202)
-        .send('Domain added to queue for scanning, please check back later.');
+      response.status(HttpStatus.ACCEPTED).send(API_RESPONSE.GET_NEW_DOMAIN);
       return;
-    } catch (e) {
-      console.error('Error getting domain:', e);
-      response.status(500).send('Error getting domain.');
+    } catch (error) {
+      console.error(ERROR_MESSAGE.GET, error);
+      response
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .send(API_RESPONSE.GET_DOMAIN_ERROR);
     }
   }
 }

@@ -5,39 +5,46 @@ import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 
 import { PrismaService } from './prisma.service';
 import { ScanningService } from './scanning/scanning.service';
-import { ProductsServiceService } from '@products/products_service.service';
-import { SchedulingServiceService } from '@scheduling/scheduling_service.service';
-import { ProductsServiceController } from '@products/products_service.controller';
+import { ProductsServiceService } from '@apps/products/src/products.service';
+import { SchedulingServiceService } from '@apps/scheduling/src/scheduling.service';
+import { ProductsServiceController } from '@apps/products/src/products.controller';
+import { ConfigModule } from '@nestjs/config';
+import { EXCHANGE, TYPE } from '@apps/constants/message-queue';
 
 const messagingClient = RabbitMQModule.forRoot(RabbitMQModule, {
   exchanges: [
     {
-      name: 'dss-exchange',
-      type: 'topic',
+      name: EXCHANGE.MAIN,
+      type: TYPE,
       options: { durable: true },
     },
     {
-      name: 'dead-letter-exchange',
-      type: 'topic',
+      name: EXCHANGE.DEAD_LETTER,
+      type: TYPE,
       options: { durable: true },
     },
   ],
-  uri: process.env.RABBITMQ_URL || 'amqp://user:password@localhost:5672',
+  uri: process.env.RABBITMQ_URL,
   connectionInitOptions: { wait: false },
   queues: [
     {
-      name: 'dead-letter-queue',
+      name: EXCHANGE.DEAD_LETTER,
       options: {
         durable: true,
       },
-      exchange: 'dead-letter-exchange',
+      exchange: EXCHANGE.DEAD_LETTER,
       routingKey: '#',
     },
   ],
 });
 
 @Module({
-  imports: [messagingClient, ScheduleModule.forRoot(), HttpModule.register({})],
+  imports: [
+    ConfigModule.forRoot(),
+    messagingClient,
+    ScheduleModule.forRoot(),
+    HttpModule.register({}),
+  ],
   controllers: [ProductsServiceController],
   providers: [
     ProductsServiceService,

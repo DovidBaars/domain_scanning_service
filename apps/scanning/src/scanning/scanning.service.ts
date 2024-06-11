@@ -1,106 +1,126 @@
-import { Injectable } from '@nestjs/common';
 import * as DomainScannerClient from 'domain-scanner';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Nack, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 
 import {
   DomainScannerClientCallback,
-  DomainScannerClientOptions,
+  IDomainScannerClientOptions,
   DomainScannerClientType,
+  IScanClientApi,
 } from './scanning.interface';
 import { DSS_BaseService } from './base.service';
 import { PrismaService } from '../prisma.service';
-import { validateMessage } from '@scheduling/message_validator';
-import { ScheduleRequestDto } from '@scheduling/dto/scheduleRequest.dto';
+import { validateMessage } from '@apps/scheduling/src/message-validator';
+import { ScheduleRequestDto } from '@apps/scheduling/src/dto/request.dto';
+import { EXTERNAL_SOURCES } from '@apps/constants/external-sources';
+import { ConfigService } from '@nestjs/config';
+import { EXCHANGE, ROUTING_KEY } from '@apps/constants/message-queue';
+import { ERROR_MESSAGE } from '@apps/constants/errors';
 
 @Injectable()
-export class ScanningService extends DSS_BaseService {
+export class ScanningService extends DSS_BaseService implements OnModuleInit {
   private domainForScanning: { domainId: number; domain: string };
-  private scanClientApiArray: { id: number; name: string; key: string }[] = [
+  private scanClientApi: IScanClientApi[] = [
     {
-      name: 'virustotal',
+      name: EXTERNAL_SOURCES.VIRUSTOTAL,
       id: undefined,
-      // REMOVE
-      key: '874bfa1a8cb9e2820a1c026817b56a38dcbb3f4604135a1e38685447fc529a5f',
     },
-    // Currently supported scanners: hunterio, google, virustotal, spyonweb
   ];
-  private scannerOptions: DomainScannerClientOptions =
-    this.scanClientApiArray.reduce(
-      (acc, item) => {
-        acc.keys[item.name] = item.key;
-        return acc;
-      },
-      { keys: {} },
-    );
+  private scannerOptions: IDomainScannerClientOptions = { keys: {} };
   private results: object;
   private domainScannerClient: DomainScannerClientType = DomainScannerClient;
 
-  constructor(protected readonly prisma: PrismaService) {
+  constructor(
+    protected readonly prisma: PrismaService,
+    private configService: ConfigService,
+  ) {
     super(prisma);
   }
 
-  private async upsertScannerDb() {
-    this.scanClientApiArray = await this.scanClientApiArray.reduce(
-      async (prevPromise, { name }) => {
-        const acc = await prevPromise;
-        const { scanApiId } = await this.prisma.scanApi.upsert({
-          where: { api: name },
-          update: { lastRun: new Date() },
-          create: { api: name, lastRun: new Date() },
-          select: { scanApiId: true },
-        });
-        acc.push({ id: scanApiId, name: name });
-        return acc;
-      },
-      Promise.resolve([]),
+  onModuleInit(): void {
+    this.scanClientApi.forEach((api) => {
+      this.initializeScannerOptions(api);
+      this.initializeScannerApi(api);
+    });
+  }
+
+  private initializeScannerOptions(item: IScanClientApi): void {
+    this.scannerOptions.keys[item.name] = this.configService.get(
+      `${EXTERNAL_SOURCES.VIRUSTOTAL.toUpperCase()}_API_KEY`,
+      { infer: true },
     );
   }
 
-  private async upsertResultsDb() {
-    this.scanClientApiArray.forEach(async (scanClient) => {
-      await this.prisma.results.upsert({
-        create: {
+  private async initializeScannerApi(item: IScanClientApi): Promise<void> {
+    const scanApi = await this.prisma.scanApi.findUnique({
+      where: { api: item.name },
+    });
+    if (scanApi) {
+      item.id = scanApi.scanApiId;
+    }
+  }
+
+  private async upsertScannerDb(apiName: string): Promise<void> {
+    await this.prisma.scanApi.upsert({
+      where: { api: apiName },
+      update: { lastRun: new Date() },
+      create: { api: apiName, lastRun: new Date() },
+    });
+  }
+
+  private async upsertResultsDb(apiId: number): Promise<void> {
+    await this.prisma.results.upsert({
+      create: {
+        domainId: this.domainForScanning.domainId,
+        scanApiId: apiId,
+        results: JSON.stringify(this.results),
+      },
+      where: {
+        domainId_scanApiId: {
           domainId: this.domainForScanning.domainId,
-          scanApiId: scanClient.id,
-          results: JSON.stringify(this.results),
+          scanApiId: apiId,
         },
-        where: {
-          domainId_scanApiId: {
-            domainId: this.domainForScanning.domainId,
-            scanApiId: scanClient.id,
-          },
-        },
-        update: { results: JSON.stringify(this.results) },
-      });
+      },
+      update: { results: JSON.stringify(this.results) },
     });
   }
 
   @RabbitSubscribe({
-    exchange: 'dss-exchange',
-    routingKey: 'scan.*',
+    exchange: EXCHANGE.MAIN,
+    routingKey: `${ROUTING_KEY.SCAN}.*`,
     queueOptions: {
       durable: true,
-      deadLetterExchange: 'dead-letter-exchange',
+      deadLetterExchange: EXCHANGE.DEAD_LETTER,
     },
   })
-  async create(msg: any) {
+  async create(message: ScheduleRequestDto): Promise<Nack | void> {
     this.logAccess({ service: this.constructor.name, routingKey: 'scan.*' });
     try {
-      this.domainForScanning = await validateMessage(msg, ScheduleRequestDto);
-      const callback: DomainScannerClientCallback = async (err, res) => {
+      this.domainForScanning = await validateMessage(
+        message,
+        ScheduleRequestDto,
+      );
+      const callback: DomainScannerClientCallback = async (error, response) => {
         if (
-          err ||
-          (this.scanClientApiArray.length &&
-            this.scanClientApiArray.every(
-              ({ name }) => res[name]?.data?.response_code,
+          error ||
+          (this.scanClientApi.length > 0 &&
+            this.scanClientApi.every(
+              ({ name }) => response[name]?.data?.response_code,
             ))
         ) {
-          throw new Error(err);
+          throw new Error(error);
         }
-        this.results = res;
-        console.log('Results from scanner:', res.domain);
-        await this.upsertScannerDb();
-        await this.upsertResultsDb();
+        this.results = response;
+
+        for (const { id, name } of this.scanClientApi) {
+          try {
+            await this.upsertScannerDb(name);
+            await this.upsertResultsDb(id);
+          } catch (error) {
+            console.error(`Error upserting ${name} or ${id}:`, error);
+            throw new Error(ERROR_MESSAGE.SCAN_UPSERT);
+          }
+        }
       };
 
       this.domainScannerClient(
@@ -108,10 +128,12 @@ export class ScanningService extends DSS_BaseService {
         this.scannerOptions,
         callback.bind(this),
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(
-        'Error scanning domain',
-        error.message ? error.message : error,
+        ERROR_MESSAGE.SCAN,
+        typeof error === 'object' && error !== null && 'message' in error
+          ? error.message
+          : error,
       );
       return new Nack(false);
     }

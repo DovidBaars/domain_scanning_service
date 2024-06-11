@@ -1,7 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { SchedulingServiceModule } from './../src/scheduling_service.module';
+import { HttpStatus, INestApplication } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+
+import { SchedulingServiceModule } from '@apps/scheduling/src/scheduling.module';
 
 describe('SchedulingServiceController (e2e)', () => {
   let app: INestApplication;
@@ -18,7 +19,7 @@ describe('SchedulingServiceController (e2e)', () => {
   it('/ (GET)', () => {
     return request(app.getHttpServer())
       .get('/')
-      .expect(200)
+      .expect(HttpStatus.OK)
       .expect('Hello World!');
   });
 });

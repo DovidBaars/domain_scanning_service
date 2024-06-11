@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 
 import { PrismaService } from '@scanning/prisma.service';
-import { ProductsServiceService } from './products_service.service';
-import { ProductsServiceController } from './products_service.controller';
+import { ProductsServiceService } from './products.service';
+import { ProductsServiceController } from './products.controller';
 
 @Module({
   imports: [RabbitMQModule],

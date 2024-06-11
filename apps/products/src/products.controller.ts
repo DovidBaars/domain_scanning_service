@@ -2,9 +2,10 @@ import { Request, Response } from 'express';
 import { Controller, Get, Post, Query, Req, Res } from '@nestjs/common';
 
 import { DomainDto } from './domain.dto';
-import { ProductsServiceService } from './products_service.service';
+import { CONTROLLER } from '@apps/constants/api';
+import { ProductsServiceService } from './products.service';
 
-@Controller('domain')
+@Controller(CONTROLLER.DOMAIN)
 export class ProductsServiceController {
   constructor(
     private readonly productsServiceService: ProductsServiceService,
