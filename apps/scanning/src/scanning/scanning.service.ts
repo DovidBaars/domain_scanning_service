@@ -94,7 +94,7 @@ export class ScanningService extends DSS_BaseService implements OnModuleInit {
     },
   })
   async create(message: ScheduleRequestDto): Promise<Nack | void> {
-    this.logAccess({ service: this.constructor.name, routingKey: 'scan.*' });
+    this.logAccess({ service: this.constructor.name, routingKey: `${ROUTING_KEY.SCAN}.*` });
     try {
       this.domainForScanning = await validateMessage(
         message,
@@ -126,7 +126,7 @@ export class ScanningService extends DSS_BaseService implements OnModuleInit {
       this.domainScannerClient(
         this.domainForScanning.domain,
         this.scannerOptions,
-        callback.bind(this),
+        callback,
       );
     } catch (error: unknown) {
       console.error(
