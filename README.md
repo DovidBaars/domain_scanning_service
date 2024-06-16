@@ -3,6 +3,15 @@
 ## A backend service for managing domain scans and scheduling.
 ## Built using NestJS, PrismaORM, RabbitMQ, and SQLite.
 
+### Next Steps:
+1. Data storage.
+   - Document based db for certain uses.
+   - A table-per-external-source model.
+2. Asynchronous scanning.
+   - Fetch from external sources async.
+3. Data Presentation.
+   - GraphQL ?
+
 ### Features:
 - REST API for requesting domain scans, scan schedules, and viewing scan results.
 - Asynchronous processing using RabbitMQ for decoupled services.
